@@ -1,0 +1,250 @@
+package android.net.lowpan;
+
+import android.net.lowpan.ILowpanEnergyScanCallback;
+import android.net.lowpan.ILowpanNetScanCallback;
+import android.net.lowpan.LowpanScanner;
+import android.os.Handler;
+import android.os.RemoteException;
+import android.os.ServiceSpecificException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.ToIntFunction;
+/* loaded from: classes2.dex */
+public class LowpanScanner {
+    public protected static final String TAG = LowpanScanner.class.getSimpleName();
+    public protected ILowpanInterface mBinder;
+    public protected Callback mCallback = null;
+    public protected Handler mHandler = null;
+    public protected ArrayList<Integer> mChannelMask = null;
+    public protected int mTxPower = Integer.MAX_VALUE;
+
+    /* loaded from: classes2.dex */
+    public static abstract class Callback {
+        private protected synchronized Callback() {
+        }
+
+        /* JADX INFO: Access modifiers changed from: private */
+        public synchronized void onNetScanBeacon(LowpanBeaconInfo beacon) {
+        }
+
+        private protected synchronized void onEnergyScanResult(LowpanEnergyScanResult result) {
+        }
+
+        /* JADX INFO: Access modifiers changed from: private */
+        public synchronized void onScanFinished() {
+        }
+    }
+
+    public private protected synchronized LowpanScanner(ILowpanInterface binder) {
+        this.mBinder = binder;
+    }
+
+    private protected synchronized void setCallback(Callback cb, Handler handler) {
+        this.mCallback = cb;
+        this.mHandler = handler;
+    }
+
+    private protected synchronized void setCallback(Callback cb) {
+        setCallback(cb, null);
+    }
+
+    private protected synchronized void setChannelMask(Collection<Integer> mask) {
+        if (mask == null) {
+            this.mChannelMask = null;
+            return;
+        }
+        if (this.mChannelMask == null) {
+            this.mChannelMask = new ArrayList<>();
+        } else {
+            this.mChannelMask.clear();
+        }
+        this.mChannelMask.addAll(mask);
+    }
+
+    private protected synchronized Collection<Integer> getChannelMask() {
+        return (Collection) this.mChannelMask.clone();
+    }
+
+    private protected synchronized void addChannel(int channel) {
+        if (this.mChannelMask == null) {
+            this.mChannelMask = new ArrayList<>();
+        }
+        this.mChannelMask.add(Integer.valueOf(channel));
+    }
+
+    private protected synchronized void setTxPower(int txPower) {
+        this.mTxPower = txPower;
+    }
+
+    private protected synchronized int getTxPower() {
+        return this.mTxPower;
+    }
+
+    public protected synchronized Map<String, Object> createScanOptionMap() {
+        Map<String, Object> map = new HashMap<>();
+        if (this.mChannelMask != null) {
+            LowpanProperties.KEY_CHANNEL_MASK.putInMap(map, this.mChannelMask.stream().mapToInt(new ToIntFunction() { // from class: android.net.lowpan.-$$Lambda$LowpanScanner$b0nnjTe02JXonssLsm5Kp4EaFqs
+                @Override // java.util.function.ToIntFunction
+                public final int applyAsInt(Object obj) {
+                    int intValue;
+                    intValue = ((Integer) obj).intValue();
+                    return intValue;
+                }
+            }).toArray());
+        }
+        if (this.mTxPower != Integer.MAX_VALUE) {
+            LowpanProperties.KEY_MAX_TX_POWER.putInMap(map, Integer.valueOf(this.mTxPower));
+        }
+        return map;
+    }
+
+    private protected synchronized void startNetScan() throws LowpanException {
+        Map<String, Object> map = createScanOptionMap();
+        ILowpanNetScanCallback binderListener = new AnonymousClass1();
+        try {
+            this.mBinder.startNetScan(map, binderListener);
+        } catch (RemoteException x) {
+            throw x.rethrowAsRuntimeException();
+        } catch (ServiceSpecificException x2) {
+            throw LowpanException.rethrowFromServiceSpecificException(x2);
+        }
+    }
+
+    /* renamed from: android.net.lowpan.LowpanScanner$1  reason: invalid class name */
+    /* loaded from: classes2.dex */
+    class AnonymousClass1 extends ILowpanNetScanCallback.Stub {
+        AnonymousClass1() {
+        }
+
+        public void onNetScanBeacon(final LowpanBeaconInfo beaconInfo) {
+            final Callback callback;
+            Handler handler;
+            synchronized (LowpanScanner.this) {
+                callback = LowpanScanner.this.mCallback;
+                handler = LowpanScanner.this.mHandler;
+            }
+            if (callback == null) {
+                return;
+            }
+            Runnable runnable = new Runnable() { // from class: android.net.lowpan.-$$Lambda$LowpanScanner$1$47buDsybUOrvvSl0JOZR_FC9ISg
+                @Override // java.lang.Runnable
+                public final void run() {
+                    LowpanScanner.Callback.this.onNetScanBeacon(beaconInfo);
+                }
+            };
+            if (handler != null) {
+                handler.post(runnable);
+            } else {
+                runnable.run();
+            }
+        }
+
+        public void onNetScanFinished() {
+            final Callback callback;
+            Handler handler;
+            synchronized (LowpanScanner.this) {
+                callback = LowpanScanner.this.mCallback;
+                handler = LowpanScanner.this.mHandler;
+            }
+            if (callback == null) {
+                return;
+            }
+            Runnable runnable = new Runnable() { // from class: android.net.lowpan.-$$Lambda$LowpanScanner$1$lUw1npYnRpaO9LS5odGyASQYaic
+                @Override // java.lang.Runnable
+                public final void run() {
+                    LowpanScanner.Callback.this.onScanFinished();
+                }
+            };
+            if (handler != null) {
+                handler.post(runnable);
+            } else {
+                runnable.run();
+            }
+        }
+    }
+
+    private protected synchronized void stopNetScan() {
+        try {
+            this.mBinder.stopNetScan();
+        } catch (RemoteException x) {
+            throw x.rethrowAsRuntimeException();
+        }
+    }
+
+    private protected synchronized void startEnergyScan() throws LowpanException {
+        Map<String, Object> map = createScanOptionMap();
+        ILowpanEnergyScanCallback binderListener = new AnonymousClass2();
+        try {
+            this.mBinder.startEnergyScan(map, binderListener);
+        } catch (RemoteException x) {
+            throw x.rethrowAsRuntimeException();
+        } catch (ServiceSpecificException x2) {
+            throw LowpanException.rethrowFromServiceSpecificException(x2);
+        }
+    }
+
+    /* renamed from: android.net.lowpan.LowpanScanner$2  reason: invalid class name */
+    /* loaded from: classes2.dex */
+    class AnonymousClass2 extends ILowpanEnergyScanCallback.Stub {
+        AnonymousClass2() {
+        }
+
+        public void onEnergyScanResult(final int channel, final int rssi) {
+            final Callback callback = LowpanScanner.this.mCallback;
+            Handler handler = LowpanScanner.this.mHandler;
+            if (callback == null) {
+                return;
+            }
+            Runnable runnable = new Runnable() { // from class: android.net.lowpan.-$$Lambda$LowpanScanner$2$GBDCgjndr24KQueHMX2qGNtfLPg
+                @Override // java.lang.Runnable
+                public final void run() {
+                    LowpanScanner.AnonymousClass2.lambda$onEnergyScanResult$0(LowpanScanner.Callback.this, channel, rssi);
+                }
+            };
+            if (handler != null) {
+                handler.post(runnable);
+            } else {
+                runnable.run();
+            }
+        }
+
+        /* JADX INFO: Access modifiers changed from: package-private */
+        public static /* synthetic */ void lambda$onEnergyScanResult$0(Callback callback, int channel, int rssi) {
+            if (callback != null) {
+                LowpanEnergyScanResult result = new LowpanEnergyScanResult();
+                result.setChannel(channel);
+                result.setMaxRssi(rssi);
+                callback.onEnergyScanResult(result);
+            }
+        }
+
+        public void onEnergyScanFinished() {
+            final Callback callback = LowpanScanner.this.mCallback;
+            Handler handler = LowpanScanner.this.mHandler;
+            if (callback == null) {
+                return;
+            }
+            Runnable runnable = new Runnable() { // from class: android.net.lowpan.-$$Lambda$LowpanScanner$2$n8MSb22N9MEsazioSumvyQhW3Z4
+                @Override // java.lang.Runnable
+                public final void run() {
+                    LowpanScanner.Callback.this.onScanFinished();
+                }
+            };
+            if (handler != null) {
+                handler.post(runnable);
+            } else {
+                runnable.run();
+            }
+        }
+    }
+
+    private protected synchronized void stopEnergyScan() {
+        try {
+            this.mBinder.stopEnergyScan();
+        } catch (RemoteException x) {
+            throw x.rethrowAsRuntimeException();
+        }
+    }
+}

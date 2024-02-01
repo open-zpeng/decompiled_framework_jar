@@ -1,0 +1,21 @@
+package android.text.style;
+
+import android.graphics.Rasterizer;
+import android.text.TextPaint;
+/* loaded from: classes2.dex */
+public class RasterizerSpan extends CharacterStyle implements UpdateAppearance {
+    private Rasterizer mRasterizer;
+
+    private protected RasterizerSpan(Rasterizer r) {
+        this.mRasterizer = r;
+    }
+
+    private protected Rasterizer getRasterizer() {
+        return this.mRasterizer;
+    }
+
+    @Override // android.text.style.CharacterStyle
+    public void updateDrawState(TextPaint ds) {
+        ds.setRasterizer(this.mRasterizer);
+    }
+}
