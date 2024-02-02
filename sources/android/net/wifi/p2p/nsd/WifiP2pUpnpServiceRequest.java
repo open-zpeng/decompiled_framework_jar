@@ -1,0 +1,27 @@
+package android.net.wifi.p2p.nsd;
+
+import java.util.Locale;
+/* loaded from: classes2.dex */
+public class WifiP2pUpnpServiceRequest extends WifiP2pServiceRequest {
+    protected synchronized WifiP2pUpnpServiceRequest(String query) {
+        super(2, query);
+    }
+
+    protected synchronized WifiP2pUpnpServiceRequest() {
+        super(2, null);
+    }
+
+    public static WifiP2pUpnpServiceRequest newInstance() {
+        return new WifiP2pUpnpServiceRequest();
+    }
+
+    public static WifiP2pUpnpServiceRequest newInstance(String st) {
+        if (st == null) {
+            throw new IllegalArgumentException("search target cannot be null");
+        }
+        StringBuffer sb = new StringBuffer();
+        sb.append(String.format(Locale.US, "%02x", 16));
+        sb.append(WifiP2pServiceInfo.bin2HexStr(st.getBytes()));
+        return new WifiP2pUpnpServiceRequest(sb.toString());
+    }
+}

@@ -1,0 +1,10 @@
+package android.telephony.ims.stub;
+
+import android.os.RemoteException;
+import com.android.ims.internal.IImsStreamMediaSession;
+/* loaded from: classes2.dex */
+public class ImsStreamMediaSessionImplBase extends IImsStreamMediaSession.Stub {
+    @Override // com.android.ims.internal.IImsStreamMediaSession
+    public synchronized void close() throws RemoteException {
+    }
+}

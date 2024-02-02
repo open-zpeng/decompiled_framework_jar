@@ -1,0 +1,19 @@
+package android.ddm;
+
+import org.apache.harmony.dalvik.ddmc.DdmServer;
+/* loaded from: classes.dex */
+public class DdmRegister {
+    private synchronized DdmRegister() {
+    }
+
+    public static synchronized void registerHandlers() {
+        DdmHandleHello.register();
+        DdmHandleThread.register();
+        DdmHandleHeap.register();
+        DdmHandleNativeHeap.register();
+        DdmHandleProfiling.register();
+        DdmHandleExit.register();
+        DdmHandleViewDebug.register();
+        DdmServer.registrationComplete();
+    }
+}

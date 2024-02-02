@@ -1,0 +1,123 @@
+package android.media;
+
+import android.os.Handler;
+import android.view.Surface;
+import dalvik.system.CloseGuard;
+/* loaded from: classes.dex */
+public final class RemoteDisplay {
+    public static final int DISPLAY_ERROR_CONNECTION_DROPPED = 2;
+    public static final int DISPLAY_ERROR_UNKOWN = 1;
+    public static final int DISPLAY_FLAG_SECURE = 1;
+    private final CloseGuard mGuard = CloseGuard.get();
+    private final Handler mHandler;
+    private final Listener mListener;
+    private final String mOpPackageName;
+    private long mPtr;
+
+    /* loaded from: classes.dex */
+    public interface Listener {
+        synchronized void onDisplayConnected(Surface surface, int i, int i2, int i3, int i4);
+
+        synchronized void onDisplayDisconnected();
+
+        synchronized void onDisplayError(int i);
+    }
+
+    private native void nativeDispose(long j);
+
+    private native long nativeListen(String str, String str2);
+
+    private native void nativePause(long j);
+
+    private native void nativeResume(long j);
+
+    private synchronized RemoteDisplay(Listener listener, Handler handler, String opPackageName) {
+        this.mListener = listener;
+        this.mHandler = handler;
+        this.mOpPackageName = opPackageName;
+    }
+
+    protected void finalize() throws Throwable {
+        try {
+            dispose(true);
+        } finally {
+            super.finalize();
+        }
+    }
+
+    public static synchronized RemoteDisplay listen(String iface, Listener listener, Handler handler, String opPackageName) {
+        if (iface == null) {
+            throw new IllegalArgumentException("iface must not be null");
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("listener must not be null");
+        }
+        if (handler == null) {
+            throw new IllegalArgumentException("handler must not be null");
+        }
+        RemoteDisplay display = new RemoteDisplay(listener, handler, opPackageName);
+        display.startListening(iface);
+        return display;
+    }
+
+    private protected void dispose() {
+        dispose(false);
+    }
+
+    public synchronized void pause() {
+        nativePause(this.mPtr);
+    }
+
+    public synchronized void resume() {
+        nativeResume(this.mPtr);
+    }
+
+    private synchronized void dispose(boolean finalized) {
+        if (this.mPtr != 0) {
+            if (this.mGuard != null) {
+                if (finalized) {
+                    this.mGuard.warnIfOpen();
+                } else {
+                    this.mGuard.close();
+                }
+            }
+            nativeDispose(this.mPtr);
+            this.mPtr = 0L;
+        }
+    }
+
+    private synchronized void startListening(String iface) {
+        this.mPtr = nativeListen(iface, this.mOpPackageName);
+        if (this.mPtr == 0) {
+            throw new IllegalStateException("Could not start listening for remote display connection on \"" + iface + "\"");
+        }
+        this.mGuard.open("dispose");
+    }
+
+    public protected void notifyDisplayConnected(final Surface surface, final int width, final int height, final int flags, final int session) {
+        this.mHandler.post(new Runnable() { // from class: android.media.RemoteDisplay.1
+            @Override // java.lang.Runnable
+            public void run() {
+                RemoteDisplay.this.mListener.onDisplayConnected(surface, width, height, flags, session);
+            }
+        });
+    }
+
+    public protected void notifyDisplayDisconnected() {
+        this.mHandler.post(new Runnable() { // from class: android.media.RemoteDisplay.2
+            @Override // java.lang.Runnable
+            public void run() {
+                RemoteDisplay.this.mListener.onDisplayDisconnected();
+            }
+        });
+    }
+
+    public protected void notifyDisplayError(final int error) {
+        this.mHandler.post(new Runnable() { // from class: android.media.RemoteDisplay.3
+            @Override // java.lang.Runnable
+            public void run() {
+                RemoteDisplay.this.mListener.onDisplayError(error);
+            }
+        });
+    }
+}
